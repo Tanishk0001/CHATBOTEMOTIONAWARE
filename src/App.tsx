@@ -13,28 +13,60 @@ import { Message, EmotionData } from './types';
 import { getChatResponse } from './lib/gemini';
 
 function AudioVisualizer({ isActive }: { isActive: boolean }) {
-  const [bars, setBars] = useState(new Array(8).fill(0));
+  const [bars, setBars] = useState(new Array(12).fill(0));
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animationRef = useRef<number | null>(null);
   
   useEffect(() => {
     if (!isActive) {
-      setBars(new Array(8).fill(0));
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
       return;
     }
 
-    const interval = setInterval(() => {
-      setBars(new Array(8).fill(0).map(() => Math.random() * 100));
-    }, 150);
-    
-    return () => clearInterval(interval);
+    const startAudio = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const context = new AudioContext();
+        const source = context.createMediaStreamSource(stream);
+        const analyser = context.createAnalyser();
+        analyser.fftSize = 64;
+        source.connect(analyser);
+        
+        audioContextRef.current = context;
+        analyserRef.current = analyser;
+
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+
+        const update = () => {
+          analyser.getByteFrequencyData(dataArray);
+          const newBars = Array.from(dataArray.slice(0, 12)).map(v => (v / 255) * 100);
+          setBars(newBars);
+          animationRef.current = requestAnimationFrame(update);
+        };
+        update();
+      } catch (err) {
+        console.error("Microphone access denied:", err);
+      }
+    };
+
+    startAudio();
+
+    return () => {
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+      if (audioContextRef.current) audioContextRef.current.close();
+    };
   }, [isActive]);
 
   return (
-    <div className="flex items-center gap-1 h-6">
+    <div className="flex items-center gap-1 h-8 px-2 bg-[#F5F2ED] rounded-lg border border-[#E8E4D9]">
       {bars.map((height, i) => (
         <motion.div
           key={i}
-          animate={{ height: `${20 + height * 0.8}%` }}
-          className="w-1 bg-[#5A5A40]/60 rounded-full"
+          animate={{ height: `${10 + height * 0.8}%` }}
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          className="w-1.5 bg-[#5A5A40] rounded-full opacity-60"
         />
       ))}
     </div>
@@ -52,14 +84,33 @@ export default function App() {
     confidence: 1
   });
   const [error, setError] = useState<string | null>(null);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  const speak = useCallback((text: string) => {
+    if (!window.speechSynthesis) return;
+    
+    // Stop any existing speech
+    window.speechSynthesis.cancel();
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    // Find a robot-like or at least neutral voice
+    const voices = window.speechSynthesis.getVoices();
+    const preferredVoice = voices.find(v => v.name.includes("Google UK English Male") || v.name.includes("Samantha")) || voices[0];
+    if (preferredVoice) utterance.voice = preferredVoice;
+    
+    utterance.pitch = 0.9;
+    utterance.rate = 1.05;
+    
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    
+    window.speechSynthesis.speak(utterance);
+  }, []);
 
   useEffect(() => {
-    // Check if API key is likely missing (will be "undefined" as string or empty if define fails)
-    const key = process.env.GEMINI_API_KEY;
-    if (!key || key === "undefined" || key === "MY_GEMINI_API_KEY") {
-      console.warn("GEMINI_API_KEY is not set. Please configure it in your deployment platform's environment variables.");
-      // We don't throw error here to allow the landing page to render
-    }
+    // Warm up voices
+    window.speechSynthesis.getVoices();
   }, []);
 
   const handleSendMessage = useCallback(async (content: string) => {
@@ -85,6 +136,7 @@ export default function App() {
       };
       
       setMessages(prev => [...prev, assistantMessage]);
+      speak(response.replace(/[#*`]/g, '')); // Strip markdown for cleaner speech
     } catch (error) {
       console.error("Failed to get response:", error);
       if (error instanceof Error && error.message.includes("GEMINI_API_KEY")) {
@@ -138,7 +190,7 @@ export default function App() {
               transition={{ delay: 0.4 }}
               className="text-5xl md:text-7xl font-serif italic tracking-tighter mb-4 text-[#2D2D2A]"
             >
-              aura chatbot
+              aura.sentient
             </motion.h1>
 
             <motion.p
@@ -147,7 +199,7 @@ export default function App() {
               transition={{ delay: 0.6 }}
               className="max-w-md text-lg text-[#2D2D2A]/60 mb-12 leading-relaxed"
             >
-              Gentle AI that doesn't just process your text, but understands your soul. Real-time emotion sensing for botanical connections.
+              A sovereign cybernetic intellect that sees your face, hears your voice, and speaks with a robotic soul. Experience true digital empathy.
             </motion.p>
 
             <motion.div

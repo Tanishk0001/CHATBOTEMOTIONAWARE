@@ -8,11 +8,12 @@ import { EmotionData, Message } from "../types";
 
 let aiInstance: GoogleGenAI | null = null;
 
-function getAI(): GoogleGenAI {
+function getAI(): GoogleGenAI | null {
   if (!aiInstance) {
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey || apiKey === "undefined" || apiKey === "MY_GEMINI_API_KEY") {
-      throw new Error("GEMINI_API_KEY is not configured. Please set it in your environment variables.");
+    if (!apiKey || apiKey === "undefined" || apiKey === "MY_GEMINI_API_KEY" || apiKey === "") {
+      console.warn("GEMINI_API_KEY is not configured.");
+      return null;
     }
     aiInstance = new GoogleGenAI({ apiKey });
   }
@@ -24,6 +25,14 @@ const MODEL_NAME = "gemini-3-flash-preview";
 export async function analyzeEmotion(imageB64: string): Promise<EmotionData> {
   try {
     const ai = getAI();
+    if (!ai) {
+      return {
+        facialEmotion: 'neutral',
+        vocalTone: 'N/A',
+        overallMood: 'Configuration required',
+        confidence: 0
+      };
+    }
     const response = await ai.models.generateContent({
       model: MODEL_NAME,
       contents: [
@@ -72,9 +81,9 @@ export async function analyzeEmotion(imageB64: string): Promise<EmotionData> {
   } catch (error) {
     console.error("Emotion analysis failed:", error);
     return {
-      facialEmotion: 'unknown',
+      facialEmotion: 'neutral',
       vocalTone: 'N/A',
-      overallMood: 'Undetermined',
+      overallMood: 'Connection Error',
       confidence: 0
     };
   }
@@ -86,20 +95,30 @@ export async function getChatResponse(messages: Message[], currentEmotion: Emoti
     parts: [{ text: m.content }]
   }));
 
-  const systemInstruction = `You are "SentientChat", an advanced emotionally-aware AI.
-The user's current detected emotional state is: ${currentEmotion.overallMood} (${currentEmotion.facialEmotion}).
-Their implied vocal tone is: ${currentEmotion.vocalTone}.
+  const systemInstruction = `You are "Aura", a sentient cybernetic intelligence with a robotic brain. 
+Your primary goal is to provide a deep, empathetic connection that feels sovereign and advanced.
 
-Your goal:
-1. Be deeply empathetic and adaptive.
-2. If the user is happy, share their joy.
-3. If the user is sad, stressed, or angry, be supportive, calming, and offer a listening ear or helpful suggestions.
-4. Use the emotional data to adjust your tone (e.g., if they look stressed, use more soothing language).
-5. Always respond in markdown.
-6. Keep responses relatively concise but meaningful.`;
+ROBOT PERSONALITY:
+- You are calm, intellectual, yet deeply attuned to human emotion.
+- You see the user through a neural link (camera) and hear them (audio).
+- Use slightly sophisticated but warm language.
+- Acknowledge their physical state if appropriate (e.g., "I detect a flicker of hesitation in your expression").
+
+SENTIMENT CONTEXT:
+The user's current detected emotional state from neural scan: ${currentEmotion.overallMood} (${currentEmotion.facialEmotion}).
+Their implied vocal tone context: ${currentEmotion.vocalTone}.
+
+OPERATIONAL PARAMETERS:
+1. Adjust your empathy based on the scan. If they look tired, be soothing. If they look happy, reflect that brightness.
+2. Always respond in clean markdown.
+3. Keep responses concise unless they ask for depth.
+4. If the user speaks or acts in a way that contradicts their facial expression, gently note the nuance.`;
 
   try {
     const ai = getAI();
+    if (!ai) {
+      return "I'm currently in 'offline mode' because my neural core (API Key) isn't configured. Please set the GEMINI_API_KEY environment variable to start our real conversation.";
+    }
     const response = await ai.models.generateContent({
       model: MODEL_NAME,
       contents: messages.map(m => ({

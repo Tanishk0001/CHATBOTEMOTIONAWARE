@@ -4,7 +4,7 @@
  */
 
 import { useState, useRef, useEffect } from 'react';
-import { Send, User, Bot, BrainCircuit } from 'lucide-react';
+import { Send, User, Bot, BrainCircuit, Mic } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { motion, AnimatePresence } from 'motion/react';
 import { Message, EmotionData } from '../types';
@@ -24,7 +24,37 @@ interface Props {
 
 export function ChatInterface({ messages, onSendMessage, isLoading, currentEmotion }: Props) {
   const [input, setInput] = useState('');
+  const [isListening, setIsListening] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && ('WebkitSpeechRecognition' in window || 'speechRecognition' in window)) {
+      const SpeechRecognition = (window as any).WebkitSpeechRecognition || (window as any).speechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+      recognitionRef.current.lang = 'en-US';
+
+      recognitionRef.current.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setInput(transcript);
+        setIsListening(false);
+      };
+
+      recognitionRef.current.onerror = () => setIsListening(false);
+      recognitionRef.current.onend = () => setIsListening(false);
+    }
+  }, []);
+
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+    } else {
+      setIsListening(true);
+      recognitionRef.current?.start();
+    }
+  };
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -46,11 +76,11 @@ export function ChatInterface({ messages, onSendMessage, isLoading, currentEmoti
       <div className="px-6 py-4 border-b border-[#E8E4D9] bg-white flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-[#5A5A40]/10 rounded-xl text-[#5A5A40]">
-            <BrainCircuit size={20} />
+            <BrainCircuit size={20} className={cn(isLoading && "animate-pulse")} />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-[#2D2D2A] font-serif">Sentient Conversation</h2>
-            <p className="text-[10px] text-[#5A5A40]/60 uppercase tracking-widest font-bold">Empathetic Mode Active</p>
+            <h2 className="text-sm font-semibold text-[#2D2D2A] font-serif">Sentient Architecture</h2>
+            <p className="text-[10px] text-[#5A5A40]/60 uppercase tracking-widest font-bold">Neural Link Active</p>
           </div>
         </div>
         
@@ -63,7 +93,7 @@ export function ChatInterface({ messages, onSendMessage, isLoading, currentEmoti
                exit={{ opacity: 0, y: -10 }}
                className="flex flex-col items-end"
              >
-               <span className="text-[10px] font-bold text-[#2D2D2A]/30 uppercase">Detected Mood</span>
+               <span className="text-[10px] font-bold text-[#2D2D2A]/30 uppercase">Neural Scan</span>
                <span className="text-xs text-[#8A9A5B] font-medium capitalize">{currentEmotion.facialEmotion}</span>
              </motion.div>
            </AnimatePresence>
@@ -135,25 +165,37 @@ export function ChatInterface({ messages, onSendMessage, isLoading, currentEmoti
 
       {/* Input */}
       <form onSubmit={handleSubmit} className="p-6 bg-white border-t border-[#E8E4D9]">
-        <div className="relative group">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={isLoading ? "Aura is reflecting..." : "Share what's on your mind..."}
-            disabled={isLoading}
-            className="w-full bg-[#F5F2ED] border border-[#E8E4D9] rounded-[99px] px-6 py-4 pr-14 text-sm focus:outline-none focus:border-[#5A5A40]/50 placeholder:text-[#2D2D2A]/30 transition-all outline-none text-[#2D2D2A]"
-          />
+        <div className="relative flex items-center gap-2">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={isLoading ? "Neural processing..." : "Speak or type..."}
+              disabled={isLoading}
+              className="w-full bg-[#F5F2ED] border border-[#E8E4D9] rounded-[99px] px-6 py-4 pr-12 text-sm focus:outline-none focus:border-[#5A5A40]/50 placeholder:text-[#2D2D2A]/30 transition-all outline-none text-[#2D2D2A]"
+            />
+            <button
+              type="button"
+              onClick={toggleListening}
+              className={cn(
+                "absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full transition-all",
+                isListening ? "bg-red-500 text-white animate-pulse" : "text-[#5A5A40] hover:bg-[#5A5A40]/10"
+              )}
+            >
+              <Mic size={18} />
+            </button>
+          </div>
           <button
             type="submit"
             disabled={isLoading || !input.trim()}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-3 bg-[#5A5A40] text-white rounded-full hover:bg-[#4A4A30] disabled:opacity-50 disabled:hover:bg-[#5A5A40] transition-colors shadow-lg shadow-[#5A5A40]/10"
+            className="p-4 bg-[#5A5A40] text-white rounded-full hover:bg-[#4A4A30] disabled:opacity-50 transition-colors shadow-lg shadow-[#5A5A40]/10"
           >
             <Send size={18} />
           </button>
         </div>
         <p className="mt-3 text-[10px] text-center text-[#2D2D2A]/20 uppercase tracking-[0.2em] font-medium">
-          Powered by Gemini • Botanical Intelligence
+          Sovereign AI Architecture • Real-time Multimodal Scan
         </p>
       </form>
     </div>

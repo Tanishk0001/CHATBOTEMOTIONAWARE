@@ -72,10 +72,10 @@ export function EmotionMonitor({ onEmotionUpdate, isStreaming }: Props) {
     setIsProcessing(false);
   };
 
-  // Analyze every 5 seconds for background context
+  // Analyze every 3 seconds for background context
   useInterval(() => {
     captureAndAnalyze();
-  }, isStreaming ? 5000 : null);
+  }, isStreaming ? 3000 : null);
 
   return (
     <div className="relative overflow-hidden glass-panel w-full aspect-video md:w-64 md:aspect-square group bg-white">
