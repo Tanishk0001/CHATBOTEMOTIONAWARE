@@ -1,0 +1,12 @@
+{
+  "name": "SentientChat",
+  "description": "An emotionally aware AI chatbot that detects your feelings through facial expressions and voice tone to provide deeply personalized and empathetic responses.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "multimodal-input",
+    "real-time-emotion-analysis"
+  ]
+}

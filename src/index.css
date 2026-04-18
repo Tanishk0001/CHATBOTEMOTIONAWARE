@@ -1,0 +1,68 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --font-sans: "Helvetica Neue", Arial, sans-serif;
+  --font-serif: "Georgia", serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+:root {
+  --bg-warm: #F5F2ED;
+  --text-dark: #2D2D2A;
+  --accent-olive: #5A5A40;
+  --accent-sage: #8A9A5B;
+  --soft-stone: #E8E4D9;
+  --white: #FFFFFF;
+}
+
+body {
+  background-color: var(--bg-warm);
+  color: var(--text-dark);
+  overflow-x: hidden;
+}
+
+@layer components {
+  .atmosphere {
+    display: none; /* Removed for natural theme */
+  }
+
+  .glass-panel {
+    background: var(--white);
+    border: 1px solid var(--soft-stone);
+    border-radius: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+  }
+
+  .chat-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .chat-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .chat-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--soft-stone);
+    border-radius: 10px;
+  }
+  .chat-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-sage);
+    opacity: 0.5;
+  }
+}
+
+/* Typography Overrides */
+h1, h2, h3, .font-serif {
+  font-family: var(--font-serif);
+}
+
+/* Animations */
+@keyframes pulse-soft {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.05); opacity: 0.8; }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 3s ease-in-out infinite;
+}
+
+
