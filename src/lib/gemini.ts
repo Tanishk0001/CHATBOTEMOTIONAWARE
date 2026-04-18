@@ -6,14 +6,24 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { EmotionData, Message } from "../types";
 
-const ai = new GoogleGenAI({ 
-  apiKey: process.env.GEMINI_API_KEY! 
-});
+let aiInstance: GoogleGenAI | null = null;
+
+function getAI(): GoogleGenAI {
+  if (!aiInstance) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey || apiKey === "undefined" || apiKey === "MY_GEMINI_API_KEY") {
+      throw new Error("GEMINI_API_KEY is not configured. Please set it in your environment variables.");
+    }
+    aiInstance = new GoogleGenAI({ apiKey });
+  }
+  return aiInstance;
+}
 
 const MODEL_NAME = "gemini-3-flash-preview";
 
 export async function analyzeEmotion(imageB64: string): Promise<EmotionData> {
   try {
+    const ai = getAI();
     const response = await ai.models.generateContent({
       model: MODEL_NAME,
       contents: [
@@ -89,6 +99,7 @@ Your goal:
 6. Keep responses relatively concise but meaningful.`;
 
   try {
+    const ai = getAI();
     const response = await ai.models.generateContent({
       model: MODEL_NAME,
       contents: messages.map(m => ({

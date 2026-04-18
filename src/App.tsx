@@ -51,6 +51,16 @@ export default function App() {
     overallMood: 'Waiting to connect...',
     confidence: 1
   });
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Check if API key is likely missing (will be "undefined" as string or empty if define fails)
+    const key = process.env.GEMINI_API_KEY;
+    if (!key || key === "undefined" || key === "MY_GEMINI_API_KEY") {
+      console.warn("GEMINI_API_KEY is not set. Please configure it in your deployment platform's environment variables.");
+      // We don't throw error here to allow the landing page to render
+    }
+  }, []);
 
   const handleSendMessage = useCallback(async (content: string) => {
     const userMessage: Message = {
@@ -77,6 +87,9 @@ export default function App() {
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
       console.error("Failed to get response:", error);
+      if (error instanceof Error && error.message.includes("GEMINI_API_KEY")) {
+        setError("The app is not configured correctly. Please set GEMINI_API_KEY in your deployment environment variables.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -91,6 +104,12 @@ export default function App() {
       <div className="atmosphere" />
       
       <AnimatePresence mode="wait">
+        {error && (
+          <div className="fixed top-0 left-0 right-0 z-50 p-4 bg-red-500 text-white text-center text-sm font-bold shadow-lg">
+             {error}
+             <button onClick={() => setError(null)} className="ml-4 underline">Dismiss</button>
+          </div>
+        )}
         {!hasStarted ? (
           <motion.main
             key="landing"
