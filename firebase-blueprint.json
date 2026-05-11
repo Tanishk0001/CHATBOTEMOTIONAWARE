@@ -1,0 +1,33 @@
+{
+  "entities": {
+    "UserSecret": {
+      "title": "User Profile & Preferences",
+      "description": "Private persistent data used to enhance Aura's neural model for a specific user.",
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string", "description": "User's preferred name." },
+        "bio": { "type": "string", "description": "Brief context about the user (job, interests)." },
+        "preferences": {
+          "type": "object",
+          "properties": {
+             "tone": { "type": "string", "enum": ["calm", "energetic", "technical", "protective"] },
+             "favoriteApps": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "neuralMemory": { 
+          "type": "array",
+          "description": "Short-term facts Aura has learned about the user.",
+          "items": { "type": "string" }
+        },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["updatedAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}/private/profile": {
+      "schema": "UserSecret",
+      "description": "Highly restricted user data for personalization."
+    }
+  }
+}

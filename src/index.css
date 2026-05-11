@@ -2,67 +2,86 @@
 @plugin "@tailwindcss/typography";
 
 @theme {
-  --font-sans: "Helvetica Neue", Arial, sans-serif;
-  --font-serif: "Georgia", serif;
+  --font-sans: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Space Grotesk", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
+@layer utilities {
+  .neural-glow {
+    box-shadow: 0 0 30px rgba(194, 168, 45, 0.4), 0 0 60px rgba(194, 168, 45, 0.2);
+  }
+  .orb-active {
+    box-shadow: 0 0 80px rgba(194, 168, 45, 0.6), inset 0 0 40px rgba(194, 168, 45, 0.4);
+    animation: orb-pulse 1.5s ease-in-out infinite;
+  }
+  .orb-speaking {
+    box-shadow: 0 0 100px rgba(194, 168, 45, 0.5), inset 0 0 50px rgba(194, 168, 45, 0.3);
+    animation: orb-wave 1.2s ease-in-out infinite;
+  }
+  .nebula-bg {
+    background: radial-gradient(circle at 50% 50%, #050505 0%, #000000 100%);
+  }
+}
+
 :root {
-  --bg-warm: #F5F2ED;
-  --text-dark: #2D2D2A;
-  --accent-olive: #5A5A40;
-  --accent-sage: #8A9A5B;
-  --soft-stone: #E8E4D9;
-  --white: #FFFFFF;
+  --bg-aura: #000000;
+  --text-aura: #f8fafc;
+  --accent-gold: #c2a82d;
+  --accent-gold-bright: #e5c158;
+  --glass-dark: rgba(5, 5, 5, 0.6);
+  --border-aura: rgba(194, 168, 45, 0.1);
 }
 
-body {
-  background-color: var(--bg-warm);
-  color: var(--text-dark);
-  overflow-x: hidden;
-}
-
-@layer components {
-  .atmosphere {
-    display: none; /* Removed for natural theme */
+@layer base {
+  body {
+    background-color: var(--bg-aura);
+    color: var(--text-aura);
+    font-family: var(--font-sans);
+    overflow: hidden;
+    letter-spacing: -0.02em;
+    background-image: 
+      radial-gradient(circle at 0% 0%, rgba(194, 168, 45, 0.03) 0%, transparent 50%),
+      radial-gradient(circle at 100% 100%, rgba(194, 168, 45, 0.02) 0%, transparent 50%);
   }
 
   .glass-panel {
-    background: var(--white);
-    border: 1px solid var(--soft-stone);
-    border-radius: 1.5rem;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+    background: var(--glass-dark);
+    backdrop-filter: blur(60px);
+    -webkit-backdrop-filter: blur(60px);
+    border: 1px solid var(--border-aura);
+    border-radius: 3rem;
+    box-shadow: 0 12px 100px rgba(0, 0, 0, 0.9);
   }
 
-  .chat-scrollbar::-webkit-scrollbar {
-    width: 6px;
+  @keyframes orb-pulse {
+    0%, 100% { transform: scale(1); filter: brightness(1) drop-shadow(0 0 20px var(--accent-gold)); }
+    50% { transform: scale(1.1); filter: brightness(1.4) drop-shadow(0 0 40px var(--accent-gold)); }
   }
-  .chat-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
+
+  @keyframes orb-wave {
+    0%, 100% { transform: scale(1.05) rotate(0deg); opacity: 0.8; }
+    33% { transform: scale(1.15) rotate(2deg); opacity: 1; }
+    66% { transform: scale(1.1) rotate(-2deg); opacity: 0.9; }
   }
-  .chat-scrollbar::-webkit-scrollbar-thumb {
-    background: var(--soft-stone);
-    border-radius: 10px;
-  }
-  .chat-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: var(--accent-sage);
-    opacity: 0.5;
+
+  @keyframes scanline {
+    0% { transform: translateY(-100%); opacity: 0; }
+    50% { opacity: 0.5; }
+    100% { transform: translateY(100vh); opacity: 0; }
   }
 }
 
-/* Typography Overrides */
-h1, h2, h3, .font-serif {
-  font-family: var(--font-serif);
+.atmosphere {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: 
+    radial-gradient(circle at 15% 15%, rgba(194, 168, 45, 0.04) 0%, transparent 40%),
+    radial-gradient(circle at 85% 85%, rgba(194, 168, 45, 0.04) 0%, transparent 40%);
+  z-index: -1;
 }
 
-/* Animations */
-@keyframes pulse-soft {
-  0%, 100% { transform: scale(1); opacity: 0.5; }
-  50% { transform: scale(1.05); opacity: 0.8; }
+.scanline {
+  display: none;
 }
-
-.animate-pulse-soft {
-  animation: pulse-soft 3s ease-in-out infinite;
-}
-
-

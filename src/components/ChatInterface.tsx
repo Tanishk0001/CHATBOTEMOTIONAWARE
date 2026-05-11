@@ -73,14 +73,18 @@ export function ChatInterface({ messages, onSendMessage, isLoading, currentEmoti
   return (
     <div className="flex flex-col h-full glass-panel overflow-hidden border-[#E8E4D9]">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-[#E8E4D9] bg-white flex items-center justify-between">
+      <div className="px-6 py-4 border-b border-[#E8E4D9] bg-white flex items-center justify-between relative overflow-hidden">
+        <div className="scanner-line" />
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-[#5A5A40]/10 rounded-xl text-[#5A5A40]">
+          <div className={cn(
+            "p-2 rounded-xl text-white transition-all duration-500",
+            isLoading ? "bg-[#8A9A5B] neural-glow" : "bg-[#5A5A40]"
+          )}>
             <BrainCircuit size={20} className={cn(isLoading && "animate-pulse")} />
           </div>
           <div>
             <h2 className="text-sm font-semibold text-[#2D2D2A] font-serif">Sentient Architecture</h2>
-            <p className="text-[10px] text-[#5A5A40]/60 uppercase tracking-widest font-bold">Neural Link Active</p>
+            <p className="text-[10px] text-[#5A5A40]/60 uppercase tracking-[0.2em] font-bold">Neural Link Active</p>
           </div>
         </div>
         

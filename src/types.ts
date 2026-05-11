@@ -28,6 +28,16 @@ export interface EmotionData {
   confidence: number;
 }
 
+export interface UserProfile {
+  displayName?: string;
+  bio?: string;
+  preferences?: {
+    tone?: string;
+    favoriteApps?: string[];
+  };
+  neuralMemory?: string[];
+}
+
 export interface ChatSession {
   messages: Message[];
   currentEmotion: EmotionData;

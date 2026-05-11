@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useInterval } from 'react-use';
 import { EmotionData } from '../types';
 import { analyzeEmotion } from '../lib/gemini';
+import { loadFaceModels, detectEmotionLocally } from '../lib/faceDetector';
 
 interface Props {
   onEmotionUpdate: (data: EmotionData) => void;
@@ -20,6 +21,11 @@ export function EmotionMonitor({ onEmotionUpdate, isStreaming }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isLocalModelReady, setIsLocalModelReady] = useState(false);
+
+  useEffect(() => {
+    loadFaceModels().then(() => setIsLocalModelReady(true));
+  }, []);
 
   useEffect(() => {
     if (isStreaming) {
@@ -56,6 +62,25 @@ export function EmotionMonitor({ onEmotionUpdate, isStreaming }: Props) {
     if (!videoRef.current || !canvasRef.current || !isStreaming || isProcessing) return;
 
     setIsProcessing(true);
+    
+    // 1. Try local detection first (Fast, No Quota)
+    if (isLocalModelReady) {
+      const localResult = await detectEmotionLocally(videoRef.current);
+      if (localResult && localResult.confidence > 0.6) {
+        onEmotionUpdate({
+          facialEmotion: localResult.emotion,
+          vocalTone: 'Analyzing...',
+          overallMood: localResult.emotion.toUpperCase(),
+          confidence: localResult.confidence
+        });
+        // We still occasionally want Gemini for "deeper" context, 
+        // but we can skip it for simple expression updates.
+        setIsProcessing(false);
+        return;
+      }
+    }
+
+    // 2. Fallback to Gemini if local fails or is unconfident
     const canvas = canvasRef.current;
     const video = videoRef.current;
     canvas.width = video.videoWidth;
@@ -66,55 +91,31 @@ export function EmotionMonitor({ onEmotionUpdate, isStreaming }: Props) {
       ctx.drawImage(video, 0, 0);
       const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
       
-      const emotionData = await analyzeEmotion(dataUrl);
-      onEmotionUpdate(emotionData);
+      try {
+        const emotionData = await analyzeEmotion(dataUrl);
+        onEmotionUpdate(emotionData);
+      } catch (err) {
+        console.warn("[Neural Link] Gemini scan skipped or failed.");
+      }
     }
     setIsProcessing(false);
   };
 
-  // Analyze every 3 seconds for background context
+  // Analyze every 5 seconds (mixed mode)
   useInterval(() => {
     captureAndAnalyze();
-  }, isStreaming ? 3000 : null);
+  }, isStreaming ? 5000 : null);
 
   return (
-    <div className="relative overflow-hidden glass-panel w-full aspect-video md:w-64 md:aspect-square group bg-white">
-      {!isStreaming ? (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#E8E4D9]/20 text-[#2D2D2A]/30 space-y-2">
-          <CameraOff size={32} />
-          <span className="text-xs font-medium uppercase tracking-widest">Sense Idle</span>
-        </div>
-      ) : (
-        <>
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            className="w-full h-full object-cover rounded-3xl"
-          />
-          <div className="absolute top-3 left-3 flex items-center gap-2 px-2 py-1 bg-white/80 backdrop-blur-md rounded-full border border-[#5A5A40]/10">
-            <div className={`w-2 h-2 rounded-full ${isProcessing ? 'bg-[#8A9A5B] animate-pulse' : 'bg-[#5A5A40]'}`} />
-            <span className="text-[10px] font-bold text-[#5A5A40] uppercase tracking-tighter">
-              {isProcessing ? 'Analyzing...' : 'Sentient Eye'}
-            </span>
-          </div>
-        </>
-      )}
+    <div className="hidden opacity-0 pointer-events-none absolute -z-50">
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted
+        className="w-1 h-1"
+      />
       <canvas ref={canvasRef} className="hidden" />
-      
-      <AnimatePresence>
-        {isStreaming && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute bottom-3 right-3"
-          >
-            <Sparkles className="text-[#8A9A5B] w-5 h-5 animate-pulse-soft" />
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
